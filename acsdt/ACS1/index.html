@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZigZag 压缩算法教学演示</title>
+<style>
+    body {
+        margin: 0;
+        font-family: "Segoe UI", "PingFang SC", sans-serif;
+        background: radial-gradient(circle at top left, #90caf9, #1565c0);
+        color: #0d47a1;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 40px 10px;
+    }
+    .card {
+        width: 95%;
+        max-width: 1000px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(15px);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        padding: 30px 40px;
+        animation: fadeIn 0.8s ease;
+    }
+    @keyframes fadeIn { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+    h1 {
+        text-align: center;
+        font-weight: 700;
+        font-size: 2rem;
+        color: #0d47a1;
+        margin-bottom: 10px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    p.intro {
+        text-align: center;
+        color: #1565c0;
+        font-size: 1rem;
+        margin-bottom: 25px;
+    }
+    .section {
+        margin: 25px 0;
+        padding: 25px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    .input-group {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    input {
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: 1px solid #90caf9;
+        margin: 0 10px;
+        text-align: center;
+    }
+    button {
+        background: linear-gradient(135deg, #2196f3, #64b5f6);
+        border: none;
+        color: #fff;
+        font-size: 16px;
+        border-radius: 8px;
+        padding: 10px 20px;
+        margin: 8px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 10px rgba(33,150,243,0.3);
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(33,150,243,0.4); }
+    .matrix {
+        display: grid;
+        gap: 5px;
+        justify-content: center;
+        margin: 20px 0;
+    }
+    .cell {
+        width: 50px;
+        height: 50px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #90caf9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #1565c0;
+        transition: all 0.3s ease;
+    }
+    .cell.active {
+        background: linear-gradient(135deg, #42a5f5, #1e88e5);
+        color: #fff;
+        transform: scale(1.1);
+    }
+    .result {
+        font-family: "Fira Code", monospace;
+        padding: 10px;
+        background: rgba(255,255,255,0.9);
+        border-radius: 8px;
+        border: 1px solid rgba(33,150,243,0.2);
+        word-break: break-all;
+    }
+    .stats {
+        display: flex;
+        justify-content: space-around;
+        text-align: center;
+        flex-wrap: wrap;
+    }
+    .stat {
+        background: rgba(255,255,255,0.9);
+        border-radius: 10px;
+        padding: 15px 25px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        margin: 10px;
+    }
+    .stat-value { font-size: 22px; font-weight: 700; color: #1565c0; }
+</style>
+</head>
+<body>
+<div class="card">
+    <h1>ZigZag 压缩算法教学演示</h1>
+    <p class="intro">通过“之”字形路径演示矩阵遍历与压缩过程</p>
+
+    <div class="section">
+        <div class="input-group">
+            <label>行数:</label>
+            <input type="number" id="rows" value="4" min="2" max="8">
+            <label>列数:</label>
+            <input type="number" id="cols" value="4" min="2" max="8">
+            <button onclick="generateMatrix()">生成矩阵</button>
+        </div>
+        <div id="matrixDisplay" class="matrix"></div>
+
+        <div style="text-align:center;">
+            <button onclick="startZigZag()">▶ 开始动画</button>
+            <button onclick="resetAnimation()">🔁 重置</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>压缩结果</h3>
+        <div class="stats">
+            <div class="stat"><div>原始大小</div><div class="stat-value" id="originalSize">0</div></div>
+            <div class="stat"><div>压缩后</div><div class="stat-value" id="compressedSize">0</div></div>
+            <div class="stat"><div>压缩率</div><div class="stat-value" id="ratio">0%</div></div>
+        </div>
+        <div id="result" class="result"></div>
+    </div>
+<!-- 可视防伪警示 + 隐形水印 -->
+<p style="text-align:center; font-size:12px; color:#999; margin:10px 0; user-select:none;"
+   oncopy="event.preventDefault();alert('防伪码已激活，复制行为已记录！');">
+  学号：2305300224程松平 | 复制即留痕，搬运将追责
+</p>
+<p style="font-size:0;user-select:none;pointer-events:none;color:transparent">
+  &#8203;&#8203;&#8203;&#65031;&#65032;&#65033;&#65034;&#65035;&#8203;&#8203;&#8203;
+</p>
+</div>
+
+<script>
+let matrix = [];
+let path = [];
+let step = 0;
+let timer = null;
+
+function generateMatrix() {
+    const rows = +document.getElementById('rows').value;
+    const cols = +document.getElementById('cols').value;
+    matrix = [];
+    for(let i=0;i<rows;i++){
+        matrix[i]=[];
+        for(let j=0;j<cols;j++){
+            matrix[i][j]=Math.floor(Math.random()*100);
+        }
+    }
+    renderMatrix();
+    genPath(rows,cols);
+    compress();
+}
+
+function renderMatrix(){
+    const display=document.getElementById('matrixDisplay');
+    display.innerHTML='';
+    display.style.gridTemplateColumns=`repeat(${matrix[0].length},50px)`;
+    matrix.forEach((r,i)=>{
+        r.forEach((v,j)=>{
+            const d=document.createElement('div');
+            d.className='cell';
+            d.id=`c-${i}-${j}`;
+            d.textContent=v;
+            display.appendChild(d);
+        });
+    });
+}
+
+function genPath(r,c){
+    path=[];
+    let row=0,col=0,up=true;
+    while(row<r&&col<c){
+        path.push({r:row,c:col});
+        if(up){
+            if(col===c-1){row++;up=false;}
+            else if(row===0){col++;up=false;}
+            else {row--;col++;}
+        }else{
+            if(row===r-1){col++;up=true;}
+            else if(col===0){row++;up=true;}
+            else {row++;col--;}
+        }
+        if(row>=r||col>=c)break;
+    }
+}
+
+function compress(){
+    const seq=path.map(p=>matrix[p.r][p.c]);
+    document.getElementById('originalSize').textContent=matrix.length*matrix[0].length;
+    document.getElementById('compressedSize').textContent=seq.length;
+    document.getElementById('ratio').textContent='100%';
+    document.getElementById('result').textContent='压缩序列：['+seq.join(', ')+']';
+}
+
+function startZigZag(){
+    resetAnimation();
+    let speed=400;
+    timer=setInterval(()=>{
+        if(step>=path.length){clearInterval(timer);return;}
+        const {r,c}=path[step];
+        document.querySelectorAll('.cell').forEach(cell=>cell.classList.remove('active'));
+        document.getElementById(`c-${r}-${c}`).classList.add('active');
+        step++;
+    },speed);
+}
+
+function resetAnimation(){
+    clearInterval(timer);
+    step=0;
+    document.querySelectorAll('.cell').forEach(cell=>cell.classList.remove('active'));
+}
+
+window.onload=generateMatrix;
+</script>
+</body>
+</html>
